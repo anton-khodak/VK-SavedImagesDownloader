@@ -1,7 +1,14 @@
 import math
+from typing import List
 
-import vk
+import vk_api
 
+
+class Photo:
+
+    def __init__(self, url, date):
+        self.url = url
+        self.date = date
 
 class User(object):
     '''VK user class.'''
@@ -10,13 +17,13 @@ class User(object):
         self.access_token = token
 
     def auth(self):
-        '''Authorizating user with access to photos.'''
+        '''Authorizing user with access to photos.'''
 
-        session = vk.Session(access_token=self.access_token)
-        api = vk.API(session, v='5.74')
+        session = vk_api.VkApi(token=self.access_token)
+        api = session.get_api()
         return api
 
-    def get_photos(self, api):
+    def get_photos(self, api) -> List[Photo]:
         '''Get list of saved photos URL's.'''
 
         albums = api.photos.getAlbums(need_system=1)["items"]
@@ -24,15 +31,15 @@ class User(object):
         photos_count = saved_photos["size"]
 
         print("You've got {} saved photos!".format(photos_count))
-        photos_urls = []
+        photos = []
 
         for i in range(math.ceil(photos_count / 1000)):
             saved_photos = api.photos.get(album_id="saved", count=1000, offset=i*1000)
             for photo in saved_photos["items"]:
-                photo_resolutions = sorted([(key, value) for key, value in photo.items() if key.startswith("photo_")])
-                photos_urls.append(photo_resolutions[-1][1])
+                photo_resolutions = sorted(photo['sizes'], key=lambda x: x['height'], reverse=True)
+                photos.append(Photo(photo_resolutions[0]['url'], photo['date']))
 
-        return photos_urls
+        return photos
 
     def get_credentials(self, api):
         '''Get current user's name and last name.'''

@@ -1,2 +1,2 @@
 requests
-vk
+vk_api
